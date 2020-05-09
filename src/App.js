@@ -105,21 +105,21 @@ class App extends React.Component {
       <>
       <div style={{backgroundColor: '#371A32', padding: 20, paddingTop: 30, paddingBottom: 30, fontSize: 15, color: 'white'}}>
         <h2 style={{fontWeight: 'bold', color: 'white'}}>
-          Coronavirus Super Spreader Simulation
+          Coronavirus Super Spreader Model
         </h2>
         <span>Created by <a style={{color: '#F2C7EB'}} href='https://twitter.com/jspaulding'>Jesse Spaulding</a>. Source code available on <a style={{color: '#F2C7EB'}} href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a></span>
       </div>
       <div style={{backgroundColor: '#F2C7EB', padding: 20, fontSize: 15}}>
-        <p style={{maxWidth: 800}}>
+        <p style={{maxWidth: 1000}}>
         <b>About this model:</b> This model helps visualize how heterogeneity in the population affects the level at which we can expect to achieve herd immunity.
         I created this because some epidemiologists have been <a href="https://www.nytimes.com/2020/05/01/opinion/sunday/coronavirus-herd-immunity.html">making arguments</a> against herd immunity using naive models that fail to account for heterogeneity entirely.
         </p>
-        <p style={{maxWidth: 800}}>
+        <p style={{maxWidth: 1000}}>
           <b>Why heterogenity matters:</b> Not everyone is alike in their likelihood of catching and spreading the virus. 
           Someone who lives in a dense urban area and goes to crowded bars every night is <i>MUCH</i> more likely to contract and spread the virus than a person who sits at home playing video games all day. 
           "Super spreaders" catch the virus first, and as they become immune the R0 is lowered among the remaining population.
         </p>
-        <p style={{maxWidth: 800}}>
+        <p style={{maxWidth: 1000}}>
           <b>Disclaimer:</b> I'm not an epidemiologist. My math/code could be wrong. Code available on <a href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a>.
         </p>
       </div>
