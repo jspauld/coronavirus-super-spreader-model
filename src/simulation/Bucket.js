@@ -2,14 +2,14 @@ export default class Bucket {
 
     constructor (sim, data) {
         console.log({data})
-        const totalSize = sim.bucketsData.reduce((a,b)=>a+b.bucketSize, 0)
-        const percentOfTotalPopulation = data.bucketSize / totalSize;
+        const totalSize = sim.bucketsData.reduce((a,b)=>a+b.relativeSize, 0)
+        const percentOfTotalPopulation = data.relativeSize / totalSize;
         const population = sim.state.population * percentOfTotalPopulation;
         const initialInfected = sim.state.initialInfected * percentOfTotalPopulation;
 
         this.sim = sim;
         this.population = population;
-        this.interactionRate = data.spread;
+        this.interactionRate = data.spreadMultiple;
         this.totalInfected = initialInfected;
         this.infectedByDay = [initialInfected];
         this.totalDeaths = 0;

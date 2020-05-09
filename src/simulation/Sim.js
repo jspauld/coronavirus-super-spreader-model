@@ -5,8 +5,7 @@ export default class Sim {
 
     constructor (state) {
         this.state = state;
-        const oneBucket = [{bucketSize: 1, spread: 1}]
-        this.bucketsData = state.useBuckets ? state.buckets : oneBucket;
+        this.bucketsData = state.useBuckets ? state.buckets : state.naiveModelBuckets;
         this.R0Adj = this.calculateR0Adj(this.bucketsData);
         this.buckets = this.bucketsData.map(data=>new Bucket(this, data))
     }
@@ -17,8 +16,8 @@ export default class Sim {
         let weights = [];
         buckets.forEach(b1=>{
             buckets.forEach(b2=>{
-                values.push(b1.spread * b2.spread);
-                weights.push(b1.spread * b1.bucketSize * b2.bucketSize);
+                values.push(b1.spreadMultiple * b2.spreadMultiple);
+                weights.push(b1.spreadMultiple * b1.relativeSize * b2.relativeSize);
             });
         });
         const mean = utils.weightedMean(values, weights)
@@ -34,25 +33,15 @@ export default class Sim {
         });
     }
 
-    getInfectious = () => {
-        return this.buckets.map(b=>b.getPeopleInfectious()).reduce((a,b)=>a+b);
-    }
-
-    getTotalInfected = () => {
-        return this.buckets.map(b=>b.totalInfected).reduce((a,b)=>a+b);
-    }
-
-    getTotalDeaths = () => {
-        return this.buckets.map(b=>b.totalDeaths).reduce((a,b)=>a+b);
-    }
-
-    getNewInfections = () => {
-        return this.buckets.map(b=>b.newInfections).reduce((a,b)=>a+b);
-    }
-
-    getNewDeaths = () => {
-        return this.buckets.map(b=>b.newDeaths).reduce((a,b)=>a+b);
-    }
+    getInfectious = () => this.buckets.map(b=>b.getPeopleInfectious()).reduce((a,b)=>a+b);
+    getInfected = () => this.buckets.map(b=>b.totalInfected).reduce((a,b)=>a+b);
+    getDeaths = () => this.buckets.map(b=>b.totalDeaths).reduce((a,b)=>a+b);
+    getNewInfections = () => this.buckets.map(b=>b.newInfections).reduce((a,b)=>a+b);
+    getNewDeaths = () => this.buckets.map(b=>b.newDeaths).reduce((a,b)=>a+b);
+    
+    getInfectiousPercent = () => this.getInfectious() / this.state.population;
+    getInfectedPercent = () => this.getInfected() / this.state.population
+    getDeathsPercent = () => this.getDeaths() / this.state.population
 
     getEffectiveR0 = () => {
         return (this.getNewInfections() / this.getInfectious() * this.state.infectiveDays) || 0;
@@ -63,7 +52,6 @@ export default class Sim {
     }
 
     getChartBucketsCategories = () => {
-        let existing = [];
         let labels = []
         this.buckets.forEach(b=>{
             const label = this.getLabel(`${b.interactionRate}x`, labels);
@@ -73,7 +61,7 @@ export default class Sim {
     }
 
     getLabel = (baseLabel, existing, attempt=0) => {
-        const label = attempt == 0 ? baseLabel : `${baseLabel}.${attempt}`;
+        const label = attempt === 0 ? baseLabel : `${baseLabel}.${attempt}`;
         console.log(label, existing)
         if (existing.includes(label)) {
             return this.getLabel(baseLabel, existing, attempt+1)

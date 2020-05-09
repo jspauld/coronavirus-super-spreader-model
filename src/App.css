@@ -7,6 +7,16 @@
   background-color: 'green';
 }
 
+.btn-primary {
+  background-color: purple !important;
+  border-color: purple !important;
+}
+
 .header {
   text-align: center;
+}
+
+p {
+
+  font-size: 15px;
 }
