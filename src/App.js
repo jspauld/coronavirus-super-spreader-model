@@ -24,8 +24,8 @@ class App extends React.Component {
       herdImmunity: [],
     }
     this.state = {
-        useBuckets: false,
-        usedBuckets: false,
+        useBuckets: true,
+        usedBuckets: true,
         useAnimate: true,
         naiveModelBuckets: [
           {relativeSize: 1, spreadMultiple: 1}
@@ -145,7 +145,7 @@ class App extends React.Component {
           "Super spreaders" catch the virus first, and as they become immune the R0 is lowered among the remaining population.
         </p>
         <p style={{maxWidth: 1000}}>
-          <b>Disclaimer:</b> I'm not an epidemiologist. There may be errors in my code. Code available on <a href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a>.
+          <b>Disclaimer:</b> I'm not an epidemiologist. There may be errors in my code. The source code is available on <a href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a>.
         </p>
       </div>
     )
@@ -159,14 +159,6 @@ class App extends React.Component {
 
         <h4 style={{marginBottom: 20}}>Choose model</h4>
         <Form.Check
-          id='useBucketsNo'
-          name='useBuckets'
-          type='radio'
-          label="Naive"
-          onChange={(e)=>this.changeInput(e.target.name, false)}
-          defaultChecked={!this.state.useBuckets}
-        />
-        <Form.Check
           id='useBucketsYes'
           name='useBuckets'
           type='radio'
@@ -174,9 +166,21 @@ class App extends React.Component {
           onChange={(e)=>this.changeInput(e.target.name, true)}
           defaultChecked={this.state.useBuckets}
         />
+        <Form.Check
+          id='useBucketsNo'
+          name='useBuckets'
+          type='radio'
+          label="Naive"
+          onChange={(e)=>this.changeInput(e.target.name, false)}
+          defaultChecked={!this.state.useBuckets}
+        />
         {this.state.useBuckets && 
          <>
-          <Form.Label column sm="6" style={{fontSize: 14}}>Buckets</Form.Label>
+         <h4 style={{marginTop: 20}}>Population buckets</h4>
+          <div style={{fontSize: 14, marginTop: 10, marginBottom: 5}}>
+            Each line below represents a population bucket, each with a 'spreadMultiple' that defines how likely those people are to catch & spread the virus.
+            You may add, remove, or edit buckets. 
+          </div>
           <Form.Control ref={this.bucketTextInput} as='textarea' defaultValue={bucketString} style={{height: 200, fontSize: 14}} />
          </>
         }
