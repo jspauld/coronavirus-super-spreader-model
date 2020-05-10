@@ -1,7 +1,6 @@
 export default class Bucket {
 
     constructor (sim, data) {
-        console.log({data})
         const totalSize = sim.bucketsData.reduce((a,b)=>a+b.relativeSize, 0)
         const percentOfTotalPopulation = data.relativeSize / totalSize;
         const population = sim.state.population * percentOfTotalPopulation;
@@ -15,10 +14,9 @@ export default class Bucket {
         this.totalDeaths = 0;
         this.newInfections = 0;
         this.newDeaths = 0;
-        this.effectiveR0 = 0;
 
         this.spreadMult = this.sim.R0Adj * percentOfTotalPopulation / this.sim.state.infectiveDays;
-        console.log(percentOfTotalPopulation, population, initialInfected)
+        // console.log(percentOfTotalPopulation, population, initialInfected)
     }
 
     getUninfected = () => {
@@ -33,6 +31,7 @@ export default class Bucket {
     getPeopleInfectious = () => {
         const from = this.sim.state.incubationDays;
         const to = this.sim.state.incubationDays + this.sim.state.infectiveDays;
+        // console.log(this.infectedByDay)
         return this.infectedByDay.slice(from, to).reduce((a,b)=>a+b, 0);
     }
 
@@ -42,30 +41,27 @@ export default class Bucket {
         this.infectedByDay.unshift(0);
         this.newInfections = 0;
         
-        // Some people die
-        const deathDay = this.sim.state.incubationDays + this.sim.state.averageDaysUntilDeath
-        this.newDeaths = (this.infectedByDay[deathDay] || 0) * this.sim.state.ifr;
-        this.totalDeaths += this.newDeaths;
+        // // Some people die
+        // const deathDay = this.sim.state.incubationDays + this.sim.state.averageDaysUntilDeath
+        // this.newDeaths = (this.infectedByDay[deathDay] || 0) * this.sim.state.ifr;
+        // this.totalDeaths += this.newDeaths;
         
     }
 
     processInteractions = (fromBucket) => {
-        const totalInteractionRate = fromBucket.interactionRate * this.interactionRate * this.getMitigationMult();
+        // console.log('processInteractions')
+        const totalInteractionRate = fromBucket.interactionRate * this.interactionRate * this.sim.getMitigationMult();
         const uninfectedRatio = this.getUninfected() / this.population;
         const newInfections = fromBucket.getPeopleInfectious() * totalInteractionRate * uninfectedRatio * this.spreadMult;
+        // console.log(fromBucket.getPeopleInfectious(), uninfectedRatio, newInfections);
+        // console.log({uninfectedRatio, newInfections})
         this.newInfections += newInfections
-        this.infectedByDay[0] += newInfections;
-        this.totalInfected += newInfections;
+
     }
 
-    getMitigationMult = () => {
-        const lockdownEnd = this.sim.state.lockdownStart + this.sim.state.lockdownDays;
-        const inLockdown = this.day >= this.sim.state.lockdownStart && this.day < lockdownEnd;
-        if (inLockdown) {
-            return 1 - this.sim.state.lockdownEffectiveness;
-        } else {
-            return 1;
-        }
+    endDay = () => {
+        this.infectedByDay[0] = this.newInfections;
+        this.totalInfected += this.newInfections;
     }
 
 }

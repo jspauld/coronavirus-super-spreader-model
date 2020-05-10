@@ -14,40 +14,43 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
+    this.emptyResults = {
+      buckets: [],
+      bucketCategories: [],
+      infectious: [],
+      infected: [],
+      deaths: [],
+      effectiveR0: [],
+      herdImmunity: [],
+    }
     this.state = {
         useBuckets: false,
+        usedBuckets: false,
+        useAnimate: true,
         naiveModelBuckets: [
           {relativeSize: 1, spreadMultiple: 1}
         ],
         buckets: [
-          {relativeSize: 1, spreadMultiple: 0.1},
-          {relativeSize: 5, spreadMultiple: 0.25},
-          {relativeSize: 20, spreadMultiple: 0.5},
-          {relativeSize: 48, spreadMultiple: 1},
-          {relativeSize: 20, spreadMultiple: 2},
-          {relativeSize: 5, spreadMultiple: 5},
           {relativeSize: 1, spreadMultiple: 20},
+          {relativeSize: 5, spreadMultiple: 5},
+          {relativeSize: 20, spreadMultiple: 2},
+          {relativeSize: 48, spreadMultiple: 1},
+          {relativeSize: 20, spreadMultiple: 0.5},
+          {relativeSize: 5, spreadMultiple: 0.25},
+          {relativeSize: 1, spreadMultiple: 0.1},
         ],
-        results: {
-          simUsedBuckets: false,
-          buckets: [],
-          bucketCategories: [],
-          infectious: [],
-          infected: [],
-          deaths: [],
-          effectiveR0: [],
-          herdImmunity: [],
-        },
+        results: this.emptyResults,
     };
+    this.day = 0;
     this.sim = null;
     this.inputs = [
-      ['Population', 'population', 330000000],
-      ['Initial infected', 'initialInfected', 10000],
+      ['Population', 'population', 1000000],
+      ['Initial infected', 'initialInfected', 1000],
       ['Initial R0', 'initialR0', 2.5],
-      ['IFR', 'ifr', 0.5],
+      // ['IFR', 'ifr', 0.5],
       ['Days before infectious', 'incubationDays', 3],
-      ['Days Infectious', 'infectiveDays', 5],
-      ['Days until death', 'averageDaysUntilDeath', 21],
+      ['Days Infectious', 'infectiveDays', 7],
+      // ['Days until death', 'averageDaysUntilDeath', 21],
       ['Days in chart', 'days', 150],
       ['Mitigation start day', 'lockdownStart', 60],
       ['Mitigation days', 'lockdownDays', 14],
@@ -65,35 +68,44 @@ class App extends React.Component {
 
   runSimulation = async () => {
 
+    console.log('runSimulation')
+
     if (this.state.useBuckets) {
       const buckets = this.bucketTextInput.current.value.trim().split("\n").map(line=>JSON.parse(line));
       await this.setState({buckets});
     }
 
-    // Reset chart
-    let infectious = [];
-    let infected = [];
-    let deaths = [];
-    let effectiveR0 = [];
+    this.setState({
+      results: this.emptyResults,
+      usedBuckets: this.state.useBuckets,
+    });
+
+    this.day = 0;
     this.sim = new Sim(this.state);
-    for (let day = 1; day <= this.state.days; day++) {
-      this.sim.startDay(day);
-      infectious = [...infectious, this.sim.getInfectiousPercent()];
-      infected = [...infected, this.sim.getInfectedPercent()];
-      deaths = [...deaths, this.sim.getDeathsPercent()];
-      effectiveR0 = [...effectiveR0, this.sim.getEffectiveR0()];
+
+    clearInterval(this.timer);
+    if (this.state.useAnimate) {
+      this.timer = setInterval(()=>{
+        this.animateDay()
+      }, 100);
+    } else {
+      for (let day = 1; day <= this.state.days; day++) {
+        this.sim.processDay(day);
+      }
+      const results = this.sim.finishRun();
+      this.setState({results})
     }
-    const startIndex = effectiveR0.findIndex(r=>r>1)
-    const immuneIndex = effectiveR0.findIndex((r,i)=>r<1&&i>startIndex);
-    const immuneAt = (immuneIndex > 0) ? infected[immuneIndex] : 0
-    const herdImmunity = Array(effectiveR0.length).fill(immuneAt);
-    const buckets = this.sim.getChartBuckets();
-    const bucketCategories = this.sim.getChartBucketsCategories();
-    console.log({infectious})
-    this.setState({results: {
-      bucketsUsed: this.state.useBuckets,
-      infectious, infected, deaths, effectiveR0, buckets, bucketCategories, herdImmunity}});
-    this.sim.onComplete();
+  }
+
+  animateDay = () => {
+    this.day++;
+    if (this.day < this.state.days) {
+      const results = this.sim.processDay(this.day)
+      this.setState({results})
+    } else {
+      clearInterval(this.timer);
+      this.sim.finishRun();
+    }
   }
 
   changeInput = (name, value) => {
@@ -109,20 +121,7 @@ class App extends React.Component {
         </h2>
         <span>Created by <a style={{color: '#F2C7EB'}} href='https://twitter.com/jspaulding'>Jesse Spaulding</a>. Source code available on <a style={{color: '#F2C7EB'}} href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a></span>
       </div>
-      <div style={{backgroundColor: '#F2C7EB', padding: 20, fontSize: 15}}>
-        <p style={{maxWidth: 1000}}>
-        <b>About this model:</b> This model helps visualize how heterogeneity in the population affects the level at which we can expect to achieve herd immunity.
-        I created this because some epidemiologists have been <a href="https://www.nytimes.com/2020/05/01/opinion/sunday/coronavirus-herd-immunity.html">making arguments</a> against herd immunity using naive models that fail to account for heterogeneity entirely.
-        </p>
-        <p style={{maxWidth: 1000}}>
-          <b>Why heterogenity matters:</b> Not everyone is alike in their likelihood of catching and spreading the virus. 
-          Someone who lives in a dense urban area and goes to crowded bars every night is <i>MUCH</i> more likely to contract and spread the virus than a person who sits at home playing video games all day. 
-          "Super spreaders" catch the virus first, and as they become immune the R0 is lowered among the remaining population.
-        </p>
-        <p style={{maxWidth: 1000}}>
-          <b>Disclaimer:</b> I'm not an epidemiologist. My math/code could be wrong. Code available on <a href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a>.
-        </p>
-      </div>
+      {this.renderDescription()}
       <Container fluid>
         <Row className='h-100'>
           {this.renderLeftCol()}
@@ -133,12 +132,34 @@ class App extends React.Component {
     );
   }
 
+  renderDescription = () => {
+    return (
+      <div style={{backgroundColor: '#F2C7EB', padding: 20, fontSize: 15, borderRadius: 0}}>
+        <p style={{maxWidth: 1000}}>
+        <b>About this model:</b> This model helps visualize how heterogeneity in the population affects the level at which we can expect to achieve herd immunity.
+        I created this because some epidemiologists have been <a href="https://www.nytimes.com/2020/05/01/opinion/sunday/coronavirus-herd-immunity.html">making arguments against herd immunity</a> using naive models that fail to account for heterogeneity entirely.
+        </p>
+        <p style={{maxWidth: 1000}}>
+          <b>Why heterogenity matters:</b> Not everyone is alike in their likelihood of catching and spreading the virus. 
+          Someone who lives in a dense urban area and goes to crowded bars every night is <i>MUCH</i> more likely to contract and spread the virus than a person who sits at home playing video games all day. 
+          "Super spreaders" catch the virus first, and as they become immune the R0 is lowered among the remaining population.
+        </p>
+        <p style={{maxWidth: 1000}}>
+          <b>Disclaimer:</b> I'm not an epidemiologist. There may be errors in my code. Code available on <a href="https://github.com/jspauld/coronavirus-super-spreader-model">GitHub</a>.
+        </p>
+      </div>
+    )
+  }
+
   renderLeftCol = () => {
     const bucketString = this.state.buckets.reduce((a,b)=>`${a}${JSON.stringify(b)}\n`, '')
     return (
       <Col sm={5} style={{backgroundColor: '#F1EBF0', paddingTop: 30, paddingBottom: 30}}>
-        <h4>Choose model</h4>
+        
+
+        <h4 style={{marginBottom: 20}}>Choose model</h4>
         <Form.Check
+          id='useBucketsNo'
           name='useBuckets'
           type='radio'
           label="Naive"
@@ -146,6 +167,7 @@ class App extends React.Component {
           defaultChecked={!this.state.useBuckets}
         />
         <Form.Check
+          id='useBucketsYes'
           name='useBuckets'
           type='radio'
           label="Heterogeneous (accounts for super spreaders)"
@@ -158,7 +180,19 @@ class App extends React.Component {
           <Form.Control ref={this.bucketTextInput} as='textarea' defaultValue={bucketString} style={{height: 200, fontSize: 14}} />
          </>
         }
+
+      <Form.Check
+        id='useAnimate'
+        name='useAnimate'
+        type='checkbox'
+        label="Animate charts"
+        style={{marginTop: 30}}
+        onChange={(e)=>this.changeInput(e.target.name, e.target.checked)}
+        defaultChecked={this.state.useAnimate}
+      />
+
        {this.renderSimulateButton()}
+
         <h4 style={{marginTop: 30}}>Parameters</h4>
         {this.inputs.map(input=>this.renderInput(input))}
         {this.renderSimulateButton()}
@@ -167,7 +201,9 @@ class App extends React.Component {
   }
 
   renderSimulateButton = () => (
-    <Button variant="primary" className='btn-block' onClick={this.runSimulation} style={{marginTop: 20}}>Run Simulation</Button>
+    <>
+      <Button variant="primary" className='btn-lg' onClick={this.runSimulation} style={{marginTop: 20}}>Run Simulation</Button>
+    </>
   )
 
   renderInput = (input) => {
@@ -187,7 +223,7 @@ class App extends React.Component {
         <div>
           <h4>Population infected over time</h4>
           {this.renderInfectedChart()}
-          {this.state.results.bucketsUsed && <>
+          {this.state.usedBuckets && <>
             <h4>Population infected by bucket</h4>
             <p>The population is divided into buckets according to likelihood of catching and spreading the virus.</p>
             {this.renderBucketsChart()}
@@ -205,7 +241,7 @@ class App extends React.Component {
         theme={VictoryTheme.material}
         domain={{ x: [0, this.state.days], y: [0, 1] }}
         style={{ labels: { fontSize: 8 } }}
-        height={'270'}
+        height={270}
       >
         <VictoryLegend x={10} y={10}
           // title="Legend"
@@ -233,7 +269,7 @@ class App extends React.Component {
         />
           <VictoryArea data={this.state.results.infectious} style={{data: { fill: "orange", opacity: 1 }}} />
           <VictoryLine data={this.state.results.infected} style={{data: { stroke: 'purple', opacity: 1 }}} />
-          <VictoryLine data={this.state.results.herdImmunity} style={{data: { stroke: 'pink', opacity: 1 }}} />
+          <VictoryLine data={this.state.results.herdImmunity} style={{data: { stroke: 'pink', strokeWidth: 2, opacity: 1 }}} />
           {/* <VictoryLine data={this.state.deaths} style={{data: { fill: "red", opacity: 0.7 }}} /> */}
       </VictoryChart>
     )
@@ -245,7 +281,7 @@ class App extends React.Component {
         theme={VictoryTheme.material}
         domain={{ y: [0, 1] }}
         domainPadding={20}
-        height={'220'}
+        height={220}
       >
         <VictoryAxis />
         <VictoryAxis dependentAxis tickFormat={(x) => (`${x*100}%`)} />
